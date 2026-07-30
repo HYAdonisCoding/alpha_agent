@@ -1,0 +1,44 @@
+# Alpha Agent - Core Dependencies
+# AI-powered quantitative research platform
+
+# Data & Analysis
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Data Sources
+yfinance>=0.2.30
+akshare>=1.12.0
+
+# Parquet Support (cached data)
+pyarrow>=14.0.0
+
+# Visualization & Reporting
+matplotlib>=3.7.0
+seaborn>=0.12.0
+tabulate>=0.9.0
+
+# Configuration
+pyyaml>=6.0
+
+# Database
+sqlalchemy>=2.0.0
+
+# HTTP & API
+requests>=2.28.0
+
+# Scheduling
+schedule>=1.2.0
+
+# Progress Bars
+tqdm>=4.65.0
+
+# Optional: LLM Integration
+# openai>=1.0.0
+# langchain>=0.1.0
+
+# Development
+pytest>=7.4.0
+pytest-cov>=4.1.0
+black>=23.0.0
+ruff>=0.1.0

@@ -1,0 +1,17 @@
+[
+  {
+    "name": "relative_strength_n120",
+    "expression": "rank(close / ts_mean(close, 120))",
+    "category": "cross_sectional",
+    "template_name": "relative_strength",
+    "sharpe": -0.39,
+    "fitness": -0.18,
+    "turnover": 0.1379,
+    "returns": -0.0283,
+    "drawdown": 0.218,
+    "margin": -0.000411,
+    "status": "rejected",
+    "notes": "",
+    "recorded_at": "2026-07-30T17:44:27.808182"
+  }
+]

@@ -1,0 +1,86 @@
+# Alpha Agent Configuration
+# ==========================
+
+project:
+  name: "Alpha Agent"
+  version: "0.1.0"
+  description: "AI-powered quantitative research platform"
+
+# Database
+database:
+  path: "storage/alpha.db"
+  type: "sqlite"
+
+# Data Sources
+data:
+  sources:
+    - "yahoo"       # Yahoo Finance (global markets)
+    - "akshare"     # AKShare (A-share markets)
+  universe:
+    # US market
+    us: ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "V", "JNJ"]
+    # China A-share
+    cn: ["000001", "000002", "000858", "600519", "601318", "600036", "000333", "002415"]
+  date_range:
+    start: "2020-01-01"
+    end: null           # null = today
+  cache_dir: "data/processed"
+
+# Backtest Configuration
+backtest:
+  default_universe: "us"
+  lookback_days: 252       # 1 year of trading days
+  forward_days: 20         # 1 month forward return
+  decay_weight: 0.5        # Exponential decay for recent data
+  transaction_cost: 0.001  # 10 bps per trade
+  min_data_points: 63      # Minimum 3 months of data required
+
+# Alpha Scoring Weights
+scoring:
+  weights:
+    sharpe: 0.40
+    fitness: 0.30
+    turnover: 0.15          # penalty
+    drawdown: 0.10          # penalty
+    ic_mean: 0.05
+  thresholds:
+    recommend_submit: 1.5   # Score >= 1.5 -> recommend submission
+    needs_optimization: 1.0 # 1.0 <= Score < 1.5 -> needs work
+    archive_failure: 1.0    # Score < 1.0 -> archive as failure
+    min_db_score: 0.3       # Minimum score to persist to SQLite (below this = noise)
+
+# Alpha Templates
+templates:
+  max_params_per_alpha: 3
+  parameter_ranges:
+    n: [5, 10, 20, 40, 60, 120, 252]
+    k: [2, 3, 5, 10]
+    threshold: [0.5, 1.0, 1.5, 2.0]
+
+# AI Agent
+ai:
+  model: "gpt-4"              # Model for alpha generation
+  temperature: 0.7
+  max_alphas_per_run: 10
+  memory:
+    success_file: "ai/alpha_success.json"
+    failure_file: "ai/alpha_failed.json"
+    brain_feedback_file: "ai/alpha_brain_feedback.json"
+
+# WorldQuant BRAIN
+brain:
+  enabled: false              # Set to true when ready to connect
+  api_base: "https://api.worldquantbrain.com"
+  max_submissions_per_day: 10
+
+# Reports
+report:
+  output_dir: "report/output"
+  formats: ["markdown", "html"]
+  include_charts: true
+
+# Scheduling
+schedule:
+  daily_run_time: "06:00"
+  weekly_review_day: "Monday"
+  timezone: "Asia/Shanghai"

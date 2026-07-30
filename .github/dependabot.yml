@@ -1,0 +1,14 @@
+version: 2
+
+updates:
+  - package-ecosystem: "pip"
+    directory: "/other"
+    schedule:
+      interval: "weekly"
+
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major" # 忽略大版本 (如 1.0 -> 2.0)
+          - "version-update:semver-minor" # 忽略次要版本 (如 1.1 -> 1.2)
+          - "version-update:semver-patch" # 忽略小版本 (如 1.1.1 -> 1.1.2)
