@@ -17,8 +17,8 @@ data:
     - "yahoo"       # Yahoo Finance (global markets)
     - "akshare"     # AKShare (A-share markets)
   universe:
-    # US market
-    us: ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "V", "JNJ"]
+    # US market — auto-populated from S&P 500 (cached in data/processed/sp500_symbols.txt)
+    us: []
     # China A-share
     cn: ["000001", "000002", "000858", "600519", "601318", "600036", "000333", "002415"]
   date_range:

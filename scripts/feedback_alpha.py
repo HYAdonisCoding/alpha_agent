@@ -94,17 +94,17 @@ Examples:
                    help="Alpha name to record feedback for")
 
     # BRAIN metrics (all required when recording feedback)
-    p.add_argument("--sharpe", type=float,
+    p.add_argument("--sharpe", "-s", type=float,
                    help="BRAIN Sharpe ratio (e.g. -0.39)")
-    p.add_argument("--fitness", type=float,
+    p.add_argument("--fitness", "-f", type=float,
                    help="BRAIN fitness score (e.g. -0.18)")
-    p.add_argument("--turnover", type=float,
+    p.add_argument("--turnover", "-t", type=float,
                    help="BRAIN turnover rate as decimal (e.g. 0.1379 = 13.79%%)")
-    p.add_argument("--returns", type=float,
+    p.add_argument("--returns", "-r", type=float,
                    help="BRAIN return rate as decimal (e.g. -0.0283 = -2.83%%)")
-    p.add_argument("--drawdown", type=float,
+    p.add_argument("--drawdown", "-d", type=float,
                    help="BRAIN max drawdown as decimal (e.g. 0.218 = 21.80%%)")
-    p.add_argument("--margin", type=float, default=0.0,
+    p.add_argument("--margin", "-m", type=float, default=0.0,
                    help="BRAIN margin as decimal (e.g. -0.000411 = -4.11‱)")
 
     # Status

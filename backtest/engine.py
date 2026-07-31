@@ -98,6 +98,7 @@ class BacktestEngine:
         bottom_quantile: float = 0.2,
         transaction_cost: float = 0.001,
         decay_weight: float = 0.5,
+        warmup_days: int = 60,
     ):
         """
         Args:
@@ -114,6 +115,7 @@ class BacktestEngine:
         self.bottom_quantile = bottom_quantile
         self.transaction_cost = transaction_cost
         self.decay_weight = decay_weight
+        self.warmup_days = warmup_days
         self.operators = FactorOperators()
 
     def run(
@@ -180,11 +182,11 @@ class BacktestEngine:
 
         # 4. Compute daily returns (long-short portfolio)
         daily_returns, turnovers = self._compute_long_short_returns(
-            factor, forward_returns
+            factor, forward_returns, warmup_days=self.warmup_days
         )
 
         # 5. Compute IC
-        ic_series = self._compute_ic_series(factor, forward_returns)
+        ic_series = self._compute_ic_series(factor, forward_returns, warmup_days=self.warmup_days)
 
         # 6. Compute metrics
         result = self._compute_metrics(
@@ -200,7 +202,7 @@ class BacktestEngine:
         return result
 
     def _compute_long_short_returns(
-        self, factor: pd.DataFrame, forward_returns: pd.DataFrame
+        self, factor: pd.DataFrame, forward_returns: pd.DataFrame, warmup_days: int = 0
     ) -> Tuple[pd.Series, pd.Series]:
         """
         Simulate long-short portfolio returns.
@@ -216,7 +218,8 @@ class BacktestEngine:
         prev_long = set()
         prev_short = set()
 
-        for i in range(len(factor) - self.forward_days):
+        start_idx = max(warmup_days, 0)
+        for i in range(start_idx, len(factor) - self.forward_days):
             date = factor.index[i]
             scores = factor.iloc[i].dropna()
 
@@ -255,12 +258,13 @@ class BacktestEngine:
         return pd.Series(daily_rets), pd.Series(turnovers)
 
     def _compute_ic_series(
-        self, factor: pd.DataFrame, forward_returns: pd.DataFrame
+        self, factor: pd.DataFrame, forward_returns: pd.DataFrame, warmup_days: int = 0
     ) -> pd.Series:
         """Compute Information Coefficient (rank correlation) series."""
         ic_values = []
 
-        for i in range(len(factor) - self.forward_days):
+        start_idx = max(warmup_days, 0)
+        for i in range(start_idx, len(factor) - self.forward_days):
             f = factor.iloc[i].dropna()
             r = forward_returns.iloc[i].dropna()
 

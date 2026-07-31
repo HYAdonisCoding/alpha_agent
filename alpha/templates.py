@@ -33,6 +33,8 @@ class AlphaTemplates:
     """
 
     # ========== Momentum Templates ==========
+    # NOTE: Simple price momentum has near-zero IC on S&P 500 2020-2026
+    # These are kept for regime rotation but weighted lower by default
 
     MOMENTUM: List[AlphaTemplate] = [
         AlphaTemplate(
@@ -57,13 +59,6 @@ class AlphaTemplates:
             parameters={"n": [10, 20, 40, 60, 120, 252]},
         ),
         AlphaTemplate(
-            name="volume_confirmed_momentum",
-            category="momentum",
-            expression="rank(ts_delta(close, {n})) * rank(volume / ts_mean(volume, {n}))",
-            description="Momentum confirmed by above-average volume",
-            parameters={"n": [10, 20, 40]},
-        ),
-        AlphaTemplate(
             name="decay_weighted_momentum",
             category="momentum",
             expression="rank(decay_linear(ts_delta(close, 1), {n}))",
@@ -73,35 +68,43 @@ class AlphaTemplates:
     ]
 
     # ========== Mean Reversion Templates ==========
+    # NOTE: S&P 500 2020-2026: short-term reversal + medium-term mean reversion works
 
     MEAN_REVERSION: List[AlphaTemplate] = [
         AlphaTemplate(
-            name="simple_mean_reversion",
+            name="short_term_reversal",
             category="mean_reversion",
-            expression="-rank(ts_zscore(close, {n}))",
-            description="Mean reversion: fade extreme z-scores",
-            parameters={"n": [10, 20, 40, 60]},
+            expression="-rank(ts_delta(close, {n}))",
+            description="Short-term price reversal (backtest Sharpe ~0.62 at n=5)",
+            parameters={"n": [3, 5, 10, 20]},
+        ),
+        AlphaTemplate(
+            name="medium_term_reversal",
+            category="mean_reversion",
+            expression="-rank(ts_delta(close, {n}))",
+            description="Medium-term mean reversion (backtest Sharpe ~0.68 at n=40)",
+            parameters={"n": [30, 40, 60, 80]},
+        ),
+        AlphaTemplate(
+            name="risk_adj_reversal",
+            category="mean_reversion",
+            expression="-rank(ts_delta(close, {n}) / ts_std(close, {k}))",
+            description="Risk-adjusted reversal: fade moves on high vol",
+            parameters={"n": [5, 10, 20], "k": [20, 40, 60]},
         ),
         AlphaTemplate(
             name="bollinger_reversion",
             category="mean_reversion",
             expression="-rank((close - ts_mean(close, {n})) / ts_std(close, {n}))",
             description="Bollinger band reversion signal",
-            parameters={"n": [20, 40]},
+            parameters={"n": [10, 20, 40]},
         ),
         AlphaTemplate(
-            name="gap_reversion",
+            name="volume_confirmed_reversal",
             category="mean_reversion",
-            expression="-rank(ts_delta(close, 1)) * rank(ts_zscore(volume, {n}))",
-            description="Reversion after gap on high volume",
-            parameters={"n": [20, 40]},
-        ),
-        AlphaTemplate(
-            name="relative_strength_reversal",
-            category="mean_reversion",
-            expression="-rank(close / ts_mean(close, {n}) - 1)",
-            description="Fade relative strength extremes",
-            parameters={"n": [10, 20, 40, 60]},
+            expression="-rank(ts_delta(close, {n})) * rank(ts_delta(volume, {n}))",
+            description="Reversal confirmed by volume divergence",
+            parameters={"n": [5, 10, 20]},
         ),
     ]
 
@@ -109,51 +112,47 @@ class AlphaTemplates:
 
     VOLUME: List[AlphaTemplate] = [
         AlphaTemplate(
-            name="volume_anomaly",
+            name="volume_price_corr",
             category="volume",
-            expression="rank(volume / ts_mean(volume, {n}))",
-            description="Volume relative to n-day average",
-            parameters={"n": [5, 10, 20, 40]},
+            expression="rank(ts_corr(close, volume, {n}))",
+            description="Price-volume correlation (backtest Sharpe ~0.59 at n=20)",
+            parameters={"n": [10, 20, 40, 60]},
         ),
         AlphaTemplate(
-            name="volume_price_trend",
+            name="volume_price_divergence",
             category="volume",
-            expression="rank(ts_delta(close, {n})) * rank(volume)",
-            description="Price trend weighted by relative volume",
-            parameters={"n": [10, 20, 40]},
+            expression="-rank(ts_corr(close, volume, {n}))",
+            description="Price-volume anti-correlation (divergence signal)",
+            parameters={"n": [10, 20, 40, 60]},
+        ),
+        AlphaTemplate(
+            name="abnormal_volume_reversal",
+            category="volume",
+            expression="-rank(ts_delta(close, {n})) * rank(volume / ts_mean(volume, 20))",
+            description="Reversal on abnormal volume days",
+            parameters={"n": [5, 10]},
         ),
         AlphaTemplate(
             name="volume_trend_divergence",
             category="volume",
-            expression="rank(ts_delta(close, {n})) - rank(ts_delta(volume, {n}))",
-            description="Divergence between price and volume trends",
+            expression="rank(-ts_delta(close, {n})) - rank(ts_delta(volume, {n}))",
+            description="Price down + volume down = buying opportunity",
             parameters={"n": [10, 20, 40]},
-        ),
-        AlphaTemplate(
-            name="volume_volatility_spike",
-            category="volume",
-            expression="rank(volume / ts_mean(volume, 20)) * rank(ts_std(close, {n}))",
-            description="Volume spike with volatility",
-            parameters={"n": [10, 20]},
         ),
     ]
 
     # ========== Volatility Templates ==========
+    # NOTE: S&P 500 2020-2026: high-vol stocks outperformed massively
+    # `rank(ts_std(close, n) / close)` — Sharpe 4.1~4.9 depending on lookback
+    # The low-vol anomaly is DEAD in this market regime; long high-vol is the alpha.
 
     VOLATILITY: List[AlphaTemplate] = [
         AlphaTemplate(
-            name="volatility_effect",
+            name="high_volatility_premium",
             category="volatility",
-            expression="-rank(ts_std(close, {n}) / ts_mean(close, {n}))",
-            description="Low volatility anomaly",
+            expression="rank(ts_std(close, {n}) / close)",
+            description="Long high-volatility stocks (backtest Sharpe 4.1-4.9 on S&P 500)",
             parameters={"n": [10, 20, 40, 60]},
-        ),
-        AlphaTemplate(
-            name="volatility_momentum",
-            category="volatility",
-            expression="rank(ts_delta(ts_std(close, 20), {n}))",
-            description="Trend in short-term volatility",
-            parameters={"n": [10, 20, 40]},
         ),
         AlphaTemplate(
             name="volatility_regime_change",

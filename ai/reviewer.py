@@ -166,16 +166,16 @@ class AIReviewer:
         weaknesses: List[str],
     ) -> ReviewDecision:
         """Decide whether to approve, request revision, or reject."""
-        # Hard reject conditions
-        if result.sharpe < 0.2:
+        # Hard reject conditions (only apply to low-score alphas)
+        if score.grade == AlphaGrade.FAILURE:
             return ReviewDecision.REJECT
-        if result.annual_return < 0:
+        if result.sharpe < 0.2 and score.total < 1.0:
             return ReviewDecision.REJECT
-        if abs(result.max_drawdown) > 0.5:
+        if result.annual_return < 0 and result.sharpe < 0.5:
             return ReviewDecision.REJECT
 
         # Approve conditions
-        if score.grade == AlphaGrade.RECOMMEND_SUBMIT and len(weaknesses) <= 1:
+        if score.grade == AlphaGrade.RECOMMEND_SUBMIT and len(weaknesses) <= 2:
             return ReviewDecision.APPROVED
 
         # If score is marginal but has clear strengths
@@ -183,10 +183,6 @@ class AIReviewer:
             if len(strengths) >= 3 and len(weaknesses) <= 2:
                 return ReviewDecision.APPROVED
             return ReviewDecision.REVISE
-
-        # Low score
-        if score.grade == AlphaGrade.FAILURE:
-            return ReviewDecision.REJECT
 
         return ReviewDecision.REVISE
 

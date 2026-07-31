@@ -275,9 +275,14 @@ python scripts/submit_alpha.py --id 5 --brain-id "BRAIN-abc123"
 # 6. Wait for BRAIN simulation results (1-2 days), then input feedback
 #    等待 BRAIN 模拟结果（1-2天），然后输入反馈
 python scripts/feedback_alpha.py --list-pending   # See what needs feedback
+
+# Long form | 长参数
 python scripts/feedback_alpha.py --id 5 \\
     --sharpe 0.85 --fitness 0.40 --turnover 0.08 \\
     --returns 0.05 --drawdown 0.15 --margin 0.0002
+
+# Short form | 短参数 (faster)
+python scripts/feedback_alpha.py --id 5 -s 0.85 -f 0.40 -t 0.08 -r 0.05 -d 0.15 -m 0.0002
 
 # 7. System learns from feedback — next run generates better alphas
 #    系统从反馈中学习 — 下次运行会生成更优的 Alpha
@@ -324,12 +329,17 @@ python scripts/cleanup_db.py --max-score 0.3 --force  # Remove garbage | 清理�
 | `--stats` | Show BRAIN feedback statistics (for learning) | 查看学习统计（模板/品类通过率） |
 | `--id <N>` | Alpha database ID to record feedback for | 要记录反馈的 Alpha ID |
 | `--name <X>` | Alpha name to record feedback for | 要记录反馈的 Alpha 名称 |
-| `--sharpe <F>` | BRAIN Sharpe ratio (e.g. -0.39) | BRAIN 夏普比率（如 -0.39） |
-| `--fitness <F>` | BRAIN fitness score (e.g. -0.18) | BRAIN 适应度（如 -0.18） |
-| `--turnover <F>` | BRAIN turnover as decimal (e.g. 0.1379 = 13.79%) | BRAIN 换手率（小数，如 0.1379） |
-| `--returns <F>` | BRAIN returns as decimal (e.g. -0.0283 = -2.83%) | BRAIN 收益率（小数，如 -0.0283） |
-| `--drawdown <F>` | BRAIN drawdown as decimal (e.g. 0.218 = 21.80%) | BRAIN 最大回撤（小数，如 0.218） |
-| `--margin <F>` | BRAIN margin as decimal (e.g. -0.000411 = -4.11‱) | BRAIN 保证金（小数，如 -0.000411） |
+| `--sharpe` / `-s <F>` | BRAIN Sharpe ratio (e.g. -0.39) | BRAIN 夏普比率（如 -0.39） |
+| `--fitness` / `-f <F>` | BRAIN fitness score (e.g. -0.18) | BRAIN 适应度（如 -0.18） |
+| `--turnover` / `-t <F>` | BRAIN turnover as decimal (e.g. 0.1325 = 13.25%) | BRAIN 换手率（小数，如 0.1325） |
+| `--returns` / `-r <F>` | BRAIN returns as decimal (e.g. -0.0108 = -1.08%) | BRAIN 收益率（小数，如 -0.0108） |
+| `--drawdown` / `-d <F>` | BRAIN drawdown as decimal (e.g. 0.1519 = 15.19%) | BRAIN 最大回撤（小数，如 0.1519） |
+| `--margin` / `-m <F>` | BRAIN margin (e.g. -1.62) | BRAIN 保证金（如 -1.62） |
+
+> 💡 **Shortcut**: Use short flags for faster input: `-s`, `-f`, `-t`, `-r`, `-d`, `-m`
+> ⚠️ **Note**: Turnover/Returns/Drawdown must be decimal (e.g. 13.25% → 0.1325), not percentage.
+> 💡 **快捷输入**: 用短参数更快：`-s`, `-f`, `-t`, `-r`, `-d`, `-m`
+> ⚠️ **注意**: 换手率/收益率/回撤必须用小数（如 13.25% → 0.1325），不是百分数。
 | `--status <X>` | Acceptance status: auto / accepted / rejected | 状态：自动检测/已通过/已拒绝 |
 | `--notes <X>` | Additional notes | 备注 |
 
@@ -594,6 +604,12 @@ alpha_agent/
 |Expression|公式|
 
 
+
+
+
+
+
+
 ### 提示词
 
 你现在是我的WorldQuant BRAIN量化导师。
@@ -609,6 +625,51 @@ alpha_agent/
 
 
 ---
+
+|术语|解释|
+|---|---|
+|Market Neutralization|去除市场风险|
+|Market Risk|整体市场涨跌影响|
+|Long|买入|
+|Short|卖出|
+|Long Only|只买|
+|Long Short|买强卖弱|
+|Center|减平均值|
+|Normalize|标准化|
+|Weight|资金比例|
+|Position|仓位|
+|Decay|仓位平滑|
+|Linear Decay|线性衰减|
+|Equity|股票|
+|Bond|债券|
+|Future|期货|
+|Option|期权|
+|Fast Expression|BRAIN公式语言|
+|Region|市场地区|
+|Universe|股票池|
+|Liquidity|流动性|
+|Delay|数据延迟|
+|Delay1|昨天数据|
+|Delay0|接近实时数据|
+|Neutralization|风险中性化|
+|Industry Neutral|行业中性|
+|Decay|仓位平滑|
+|Truncation|限制单股票权重|
+|NaN|缺失数据|
+|Test Period|样本外测试|
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## License

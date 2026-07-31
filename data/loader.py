@@ -67,7 +67,7 @@ class MarketDataLoader:
         Fields: open, high, low, close, adj_close, volume
         """
         if symbols is None:
-            symbols = self.universe.get(market, self.universe.get("us", []))
+            symbols = self.get_universe(market)
 
         if start is None:
             start = self.config.get("data", {}).get("date_range", {}).get("start", "2020-01-01")
@@ -95,37 +95,56 @@ class MarketDataLoader:
         return df
 
     def _fetch_yahoo_prices(
-        self, symbols: List[str], start: str, end: str
+        self, symbols: List[str], start: str, end: str, batch_size: int = 50
     ) -> pd.DataFrame:
-        """Fetch price data from Yahoo Finance."""
+        """Fetch price data from Yahoo Finance in batches for speed."""
         try:
             import yfinance as yf
 
-            data = {}
-            for symbol in symbols:
-                try:
-                    ticker = yf.Ticker(symbol)
-                    hist = ticker.history(start=start, end=end)
-                    if not hist.empty:
-                        # Standardize columns
-                        hist = hist.rename(columns={
-                            "Open": "open",
-                            "High": "high",
-                            "Low": "low",
-                            "Close": "close",
-                            "Volume": "volume",
-                        })
-                        if "Adj Close" in hist.columns:
-                            hist = hist.rename(columns={"Adj Close": "adj_close"})
-                        data[symbol] = hist[["open", "high", "low", "close", "volume"]]
-                except Exception as e:
-                    logger.warning(f"Failed to fetch {symbol}: {e}")
+            all_data = {}
+            total = len(symbols)
 
-            if not data:
+            for i in range(0, total, batch_size):
+                batch = symbols[i : i + batch_size]
+                logger.info(f"  Fetching batch {i // batch_size + 1}: {len(batch)} symbols ({i+1}-{min(i+batch_size, total)}/{total})...")
+                try:
+                    df_batch = yf.download(
+                        batch, start=start, end=end,
+                        progress=False, auto_adjust=False, group_by="ticker",
+                    )
+                    if df_batch.empty:
+                        continue
+
+                    for sym in batch:
+                        try:
+                            if len(batch) == 1:
+                                hist = df_batch
+                            else:
+                                hist = df_batch[sym] if sym in df_batch.columns.get_level_values(0) else pd.DataFrame()
+                            if hist.empty:
+                                continue
+                            # Flatten column names
+                            if isinstance(hist.columns, pd.MultiIndex):
+                                hist.columns = hist.columns.droplevel(0)
+                            hist = hist.rename(columns={
+                                "Open": "open", "High": "high", "Low": "low",
+                                "Close": "close", "Volume": "volume",
+                            })
+                            cols = ["open", "high", "low", "close", "volume"]
+                            hist = hist[[c for c in cols if c in hist.columns]]
+                            if not hist.empty:
+                                all_data[sym] = hist
+                        except Exception:
+                            pass
+                except Exception as e:
+                    logger.warning(f"  Batch failed: {e}")
+
+            if not all_data:
                 return pd.DataFrame()
 
-            df = pd.concat(data, axis=1)
+            df = pd.concat(all_data, axis=1)
             df.columns.names = ["symbol", "field"]
+            logger.info(f"  Downloaded {len(all_data)}/{total} symbols successfully")
             return df
 
         except ImportError:
@@ -279,6 +298,72 @@ class MarketDataLoader:
         except ImportError:
             logger.error("akshare not installed. Run: pip install akshare")
             return pd.DataFrame()
+
+    # ---- Universe Management ----
+
+    def get_sp500_symbols(self, use_cache: bool = True) -> List[str]:
+        """
+        Fetch current S&P 500 constituents from Wikipedia.
+        Cached locally to avoid re-fetching every run.
+        """
+        cache_file = self.cache_dir / "sp500_symbols.txt"
+
+        if use_cache and cache_file.exists():
+            symbols = cache_file.read_text().strip().split("\n")
+            symbols = [s.strip() for s in symbols if s.strip()]
+            if symbols:
+                logger.info(f"Loaded {len(symbols)} S&P 500 symbols from cache")
+                return symbols
+
+        try:
+            logger.info("Fetching S&P 500 constituents from Wikipedia...")
+            # Use requests with proper headers to avoid 403
+            import requests, io
+            headers = {"User-Agent": "Mozilla/5.0"}
+            resp = requests.get(
+                "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+                headers=headers,
+                timeout=30,
+            )
+            tables = pd.read_html(io.StringIO(resp.text))
+            df = tables[0]
+            symbols = df["Symbol"].tolist()
+            # Clean: replace dots (BRK.B → BRK-B for yfinance)
+            symbols = [s.replace(".", "-") for s in symbols]
+
+            cache_file.write_text("\n".join(symbols))
+            logger.info(f"Fetched and cached {len(symbols)} S&P 500 symbols")
+            return symbols
+        except Exception as e:
+            logger.error(f"Failed to fetch S&P 500 symbols: {e}")
+            # Fallback to config universe
+            return self.universe.get("us", [])
+
+    def get_universe(
+        self, market: str = "us", size: Optional[int] = None
+    ) -> List[str]:
+        """
+        Get trading universe with flexible sizing.
+
+        Args:
+            market: "us" or "cn"
+            size: If provided, limit to top N by market cap. None = all.
+
+        Returns:
+            List of ticker symbols
+        """
+        if market == "cn":
+            return self.universe.get("cn", [])
+
+        # US: try S&P 500 first, fallback to config
+        symbols = self.get_sp500_symbols()
+        if not symbols:
+            symbols = self.universe.get("us", [])
+
+        if size and len(symbols) > size:
+            symbols = symbols[:size]
+
+        return symbols
 
     # ---- Utility ----
 

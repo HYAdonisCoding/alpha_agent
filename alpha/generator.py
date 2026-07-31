@@ -200,11 +200,13 @@ class AlphaGenerator:
         """
         Select templates based on market regime AND BRAIN feedback.
 
-        Market regime weights (base):
-        - Bullish: prefer momentum templates (3.0x)
-        - Bearish: prefer mean_reversion templates (3.0x)
-        - High volatility: prefer volatility templates (2.5x)
-        - Low volatility: prefer cross_sectional templates (2.0x)
+        Market regime + empirical performance weights (base):
+        - Volatility always gets 3.0x (S&P 500 2020-2026: highest Sharpe)
+        - Mean reversion always gets 2.5x (consistent alpha)
+        - Bullish: additionally boost momentum to 2.0x
+        - Bearish: additionally boost mean_reversion to 4.0x
+        - High volatility: additionally boost volatility to 5.0x
+        - Low volatility: boost cross_sectional to 2.0x
 
         BRAIN feedback weights (blended in):
         - Templates with BRAIN acceptances get boosted (up to 3.0x)
@@ -231,16 +233,24 @@ class AlphaGenerator:
 
         weights = {}
         for t in templates:
-            # 1. Market regime weight
+            # 1. Market regime weight + empirical performance bias
             market_w = 1.0
+
+            # Base empirical bias: what actually works on S&P 500 2020-2026
+            if t.category == "volatility":
+                market_w = 3.0  # Strongest alpha in all regimes
+            elif t.category == "mean_reversion":
+                market_w = 2.5  # Consistent alpha
+
+            # Regime-specific adjustments
             if regime == "bullish" and t.category == "momentum":
-                market_w = 3.0
+                market_w = 2.0  # Still boost but less than before
             elif regime == "bearish" and t.category == "mean_reversion":
-                market_w = 3.0
+                market_w = 4.0  # Extra boost in bear markets
             elif regime == "high_volatility" and t.category == "volatility":
-                market_w = 2.5
+                market_w = 5.0  # Max boost when vol is high
             elif regime == "low_volatility" and t.category == "cross_sectional":
-                market_w = 2.0
+                market_w = max(market_w, 2.0)  # At least 2.0
 
             # 2. BRAIN feedback weight (template-level takes precedence over category-level)
             brain_w = 1.0

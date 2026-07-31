@@ -72,6 +72,12 @@ def parse_args():
         choices=["template", "ai"],
         help="Generation mode (default: template)"
     )
+    parser.add_argument(
+        "--categories", type=str, default=None, nargs="+",
+        choices=["momentum", "mean_reversion", "volume", "volatility",
+                 "cross_sectional", "combination"],
+        help="Limit generation to specific categories (e.g. --categories momentum volatility)"
+    )
     return parser.parse_args()
 
 
@@ -142,6 +148,7 @@ def main():
         market_state={
             "regime": market_state.regime,
         },
+        categories=args.categories,
         exclude_expressions=failed_exprs,
         brain_template_weights=brain_template_weights,
         brain_category_weights=brain_category_weights,
