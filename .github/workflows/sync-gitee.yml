@@ -16,10 +16,13 @@ jobs:
 
         run: |
 
+          # 清除可能存在的 github -> gitee 重写
+          git config --global --unset-all url.https://gitee.com/.insteadOf || true
+
+          echo "repo=${{ github.repository }}"
           echo "username=${GITEE_USERNAME}"
 
-          git clone --mirror \
-          https://github.com/${{ github.repository }}.git repo.git
+          git clone --mirror https://github.com/${{ github.repository }}.git repo.git
 
           cd repo.git
 
