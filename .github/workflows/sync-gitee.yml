@@ -19,8 +19,10 @@ jobs:
 
           cd repo.git
 
-          git remote add gitee https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/${{ github.event.repository.name }}.git
+          git config credential.helper store
 
-          git for-each-ref --format='delete %(refname)' refs/pull | git update-ref --stdin || true
+          echo "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com" > ~/.git-credentials
+
+          git remote add gitee https://gitee.com/${GITEE_USERNAME}/${{ github.event.repository.name }}.git
 
           git push gitee --mirror
