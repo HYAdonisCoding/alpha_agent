@@ -15,14 +15,15 @@ jobs:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
 
         run: |
-          git clone --mirror https://github.com/${{ github.repository }}.git repo.git
+
+          echo "username=${GITEE_USERNAME}"
+
+          git clone --mirror \
+          https://github.com/${{ github.repository }}.git repo.git
 
           cd repo.git
 
-          git config credential.helper store
-
-          echo "https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com" > ~/.git-credentials
-
-          git remote add gitee https://gitee.com/${GITEE_USERNAME}/${{ github.event.repository.name }}.git
+          git remote add gitee \
+          https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/${{ github.event.repository.name }}.git
 
           git push gitee --mirror
