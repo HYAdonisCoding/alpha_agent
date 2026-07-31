@@ -24,7 +24,6 @@ jobs:
           cd repo.git
 
           git remote add gitee \
-          https://gitee.com/${GITEE_USERNAME}/${{ github.event.repository.name }}.git
+          https://${GITEE_USERNAME}:${GITEE_TOKEN}@gitee.com/${GITEE_USERNAME}/${{ github.event.repository.name }}.git
 
-          git -c http.extraHeader="Authorization: Bearer ${GITEE_TOKEN}" \
-          push gitee --mirror
+          git push gitee --mirror
