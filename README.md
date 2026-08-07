@@ -257,39 +257,24 @@ python scripts/daily_run.py --n 30
 
 # 2. Check what's worth submitting | 查看哪些值得提交
 python scripts/submit_alpha.py --list
-# Output shows: ID, name, score, sharpe, and BRAIN-ready name
-# 输出: ID、名称、评分、夏普、BRAIN 就绪名称
+# Output shows: ID, name, score, sharpe, expression, and BRAIN-ready properties
+# 输出: ID、名称、评分、夏普、表达式、BRAIN 属性
 
-# 3. Pick a candidate, get its full BRAIN properties | 选一个候选，获取完整 BRAIN 属性
-python scripts/submit_alpha.py --list
-# → Shows brain_name, tags, color, description for the best alpha
-# → 显示最佳 Alpha 的 BRAIN 名称、标签、颜色、描述
+# 3. Copy expression → BRAIN Alpha Creator → paste & submit
+#    复制表达式 → BRAIN Alpha Creator → 粘贴提交
+#    https://platform.worldquantbrain.com/
 
-# 4. Go to https://platform.worldquantbrain.com/ → Alpha Creator
-#    Paste the expression and brain properties manually | 手动粘贴表达式和属性
-#    打开 BRAIN → Alpha Creator → 粘贴表达式和属性
+# 4. Wait 1-2 days for BRAIN simulation results, then ONE command:
+#    等 1-2 天 BRAIN 出模拟结果后，一条命令搞定：
+#    → 自动标记"已提交" + 记录 BRAIN 反馈 + 反哺学习
 
-# 5. After successful submission, mark it locally | 提交成功后本地标注
-python scripts/submit_alpha.py --id 5 --brain-id "BRAIN-abc123"
+python scripts/feedback_alpha.py --id 3 -s -0.39 -f -0.18 -t 0.1379 -r -0.0283 -d 0.218 -m -0.000411
 
-# 6. Wait for BRAIN simulation results (1-2 days), then input feedback
-#    等待 BRAIN 模拟结果（1-2天），然后输入反馈
-python scripts/feedback_alpha.py --list-pending   # See what needs feedback
+# 5. System learns → next run generates better alphas
+#    系统自动学习 → 下次生成更优 Alpha
 
-# Long form | 长参数
-python scripts/feedback_alpha.py --id 5 \\
-    --sharpe 0.85 --fitness 0.40 --turnover 0.08 \\
-    --returns 0.05 --drawdown 0.15 --margin 0.0002
-
-# Short form | 短参数 (faster)
-python scripts/feedback_alpha.py --id 5 -s 0.85 -f 0.40 -t 0.08 -r 0.05 -d 0.15 -m 0.0002
-
-# 7. System learns from feedback — next run generates better alphas
-#    系统从反馈中学习 — 下次运行会生成更优的 Alpha
-
-# 8. Periodically clean low-score unsubmitted alphas | 定期清理低分未提交数据
-python scripts/cleanup_db.py --stats          # Check DB health | 查看数据库状态
-python scripts/cleanup_db.py --max-score 0.3 --force  # Remove garbage | 清理垃圾
+# 6. Periodic cleanup | 定期清理
+python scripts/cleanup_db.py --stats
 ```
 
 ### Command-Line Tool Reference | 命令行工具速查
@@ -316,6 +301,16 @@ python scripts/cleanup_db.py --max-score 0.3 --force  # Remove garbage | 清理�
 | `--notes <X>` | Submission notes (e.g. simulation results) | 提交备注 |
 | `--status <X>` | Status: submitted / accepted / rejected | 状态：已提交/已通过/已拒绝 |
 
+```bash
+# 查看可提交的 alpha
+python scripts/submit_alpha.py --list
+
+# 查看提交历史
+python scripts/submit_alpha.py --history
+```
+
+> 💡 BRAIN 出结果后，直接用 `feedback_alpha.py` — 一条命令自动标记提交+记录反馈+反哺学习。
+
 #### `feedback_alpha.py` — BRAIN Performance Feedback | BRAIN 表现反馈
 
 **EN**: Close the learning loop by inputting BRAIN simulation results back into the system so it can optimize future generation.
@@ -335,13 +330,26 @@ python scripts/cleanup_db.py --max-score 0.3 --force  # Remove garbage | 清理�
 | `--returns` / `-r <F>` | BRAIN returns as decimal (e.g. -0.0108 = -1.08%) | BRAIN 收益率（小数，如 -0.0108） |
 | `--drawdown` / `-d <F>` | BRAIN drawdown as decimal (e.g. 0.1519 = 15.19%) | BRAIN 最大回撤（小数，如 0.1519） |
 | `--margin` / `-m <F>` | BRAIN margin (e.g. -1.62) | BRAIN 保证金（如 -1.62） |
-
-> 💡 **Shortcut**: Use short flags for faster input: `-s`, `-f`, `-t`, `-r`, `-d`, `-m`
-> ⚠️ **Note**: Turnover/Returns/Drawdown must be decimal (e.g. 13.25% → 0.1325), not percentage.
-> 💡 **快捷输入**: 用短参数更快：`-s`, `-f`, `-t`, `-r`, `-d`, `-m`
-> ⚠️ **注意**: 换手率/收益率/回撤必须用小数（如 13.25% → 0.1325），不是百分数。
 | `--status <X>` | Acceptance status: auto / accepted / rejected | 状态：自动检测/已通过/已拒绝 |
 | `--notes <X>` | Additional notes | 备注 |
+
+> ⚠️ Turnover/Returns/Drawdown 必须用小数（如 13.25% → 0.1325），不是百分数。
+
+```bash
+# 查看等待反馈的 alpha
+python scripts/feedback_alpha.py --list-pending
+
+# 提交+反馈 一条命令 (自动创建提交记录 + 记录 BRAIN 指标 + 反哺学习)
+python scripts/feedback_alpha.py --id 3 \
+    -s -0.39 -f -0.18 -t 0.1379 -r -0.0283 -d 0.218 -m -0.000411
+
+# 按名称反馈
+python scripts/feedback_alpha.py --name volume_price_trend_n20 \
+    -s -0.10 -f -0.03 -t 0.1325 -r -0.0108 -d 0.1519 -m -1.62
+
+# 查看学习统计
+python scripts/feedback_alpha.py --stats
+```
 
 **How feedback improves generation | 反馈如何改善生成**:
 - Templates that produced BRAIN-**accepted** alphas → boosted weight (more likely to be selected)
@@ -602,9 +610,170 @@ alpha_agent/
 |Universe|股票池|
 |Data Field|数据字段|
 |Expression|公式|
-
-
-
+|Dataset Category|数据大类|
+|Dataset|数据集合|
+|Data Field|具体可用数据|
+|PV|价格成交量数据|
+|Fundamental|财务数据|
+|Close|收盘价|
+|Volume|成交量|
+|Returns|收益率|
+|Liquidity|流动性|
+|Universe|股票池|
+|Momentum|趋势延续|
+|Reversion|价格回归|
+|250|一年交易日|
+|ts_delta|变化量|
+|ts_delay|历史数据|
+|ts_sum|时间求和|
+|returns>0|上涨判断|
+|if_else|条件判断|
+|Logical Operator|逻辑运算符|
+|Condition|条件|
+|if_else|条件选择|
+|trade_when|条件交易|
+|entry|进入条件|
+|exit|退出条件|
+|positive_days|上涨天数|
+|adv20|20日平均成交量|
+|Momentum|动量|
+|Holding|持仓|
+|Liquidate|清仓|
+|NaN|无仓位|
+|Alpha|预测股票未来走势的数学模型|
+|Alpha Pool|Alpha数据库|
+|Submission|提交|
+|Fitness|综合评分|
+|Sharpe|风险收益比|
+|Turnover|换手率|
+|Weight|股票权重|
+|Robustness|稳定性|
+|Sub-universe|子股票池|
+|Correlation|相关性|
+|Self-Correlation|与已有Alpha相似程度|
+|Delay1|使用昨天以前的数据|
+|Reversion|跌多反弹|
+|Momentum|涨多继续涨|
+|Alpha Pool|Alpha数据库|
+|Submission|提交|
+|Fitness|综合表现评分|
+|Sharpe Ratio|风险收益比|
+|Turnover|换手率|
+|Weight|股票资金占比|
+|Robustness|稳定性|
+|Sub-universe|小股票池测试|
+|Correlation|相关性|
+|Delay1|使用昨天以前的数据|
+|vwap/close|价格偏离|
+|volume|资金确认|
+|CLV|短期反转|
+|operating_income/cap|价值|
+|Option|期权|
+|Derivative|衍生品|
+|Call|看涨期权|
+|Put|看跌期权|
+|Premium|期权价格|
+|Strike Price|执行价格|
+|Expiration|到期时间|
+|Volatility|价格波动程度|
+|Historical Volatility|过去真实波动|
+|Implied Volatility|市场预测未来波动|
+|Long|做多|
+|Short|做空|
+|Alpha|预测未来收益的信号|
+|Signal|交易依据|
+|Expiry|到期周期|
+|Option|期权|
+|Call Option|看涨期权|
+|Put Option|看跌期权|
+|Implied Volatility (IV)|市场预测未来波动大小|
+|IV Difference|两个IV的差值|
+|Demand|市场需求|
+|Leverage|杠杆|
+|Directionality|上涨/下跌方向|
+|Time Value|时间价值|
+|Signal|交易信号|
+|Alpha|预测未来收益的方法|
+|Neutralization|去除某些因素影响|
+|Group Neutralization|分组中性化|
+|Factor|影响股票收益的因素|
+|Alpha|预测超额收益信号|
+|Sharpe Ratio|收益/风险比例|
+|Return|收益|
+|Margin|收益效率|
+|Group|股票分类|
+|Sector|板块|
+|Industry|行业|
+|Subindustry|细分行业|
+|Bucket|分组工具|
+|Densify|压缩分类编号|
+|Market Cap(cap)|公司市值|
+|IV|隐含波动率|
+|Option Demand|期权需求|
+|Alpha|可以赚钱的预测信号|
+|Data Field|数据字段|
+|scl12_buzz|股票网络讨论热度数据|
+|Volume|成交量|
+|NLP|自然语言处理，让电脑理解文字情绪|
+|Leading Indicator|领先指标，提前反映未来变化|
+|Lookback Days|回看多少天历史数据|
+|Regression|回归分析，寻找变量之间关系|
+|Linear Regression|线性回归，用直线描述关系|
+|Independent Variable(X)|影响因素|
+|Dependent Variable(Y)|被解释因素|
+|Coefficient|系数，表示影响方向和强度|
+|Residual/Error Term|实际值和预测值之间的差距|
+|PnL Shape|收益曲线形状|
+|News Alpha|利用新闻信息赚钱的策略|
+|Sentiment|情绪|
+|Vector Data|一天多个数据值的数据|
+|Matrix Data|一天一个数据值的数据|
+|vec_avg|计算Vector平均值|
+|ts_mean|时间平均|
+|ts_sum|时间累加|
+|rank|横向排名|
+|Condition|判断条件|
+|if_else|如果A，否则B|
+|Momentum|趋势策略，涨的继续买|
+|Reversion|均值回归，涨多了卖|
+|Long|买入|
+|Short|卖出|
+|Threshold|阈值，例如50%分界|
+|Noise|随机波动|
+|Sentiment|投资者情绪|
+|News Data|新闻数据|
+|Alpha|预测股票收益的模型|
+|scl12_buzz|股票网络关注数量|
+|volume|成交量|
+|ts_regression|时间序列回归，寻找两个变量关系|
+|nws12_afterhsz_sl|新闻后多空优势数据|
+|Vector|一天多个数据值|
+|vec_avg|把多个值平均成一个|
+|Momentum|趋势策略，强者继续强|
+|Reversion|反转策略，涨多跌回来|
+|rank|排名|
+|Condition|条件|
+|Signal|交易信号|
+|Noise|噪音|
+|Alpha|预测股票未来收益的信号|
+|Gold Level|BRAIN挑战等级|
+|Challenge Point|提交Alpha获得的积分|
+|Universe|股票池|
+|Neutralization|去除某种风险影响|
+|Sector|行业|
+|Industry|细分行业|
+|Group Neutralize|组内标准化|
+|Regression Neutralize|回归方式去风险|
+|Position Distribution|仓位分布|
+|rank|把股票排序|
+|signed_power|改变信号强弱|
+|log|压缩极端值|
+|Trade_when|满足条件才交易|
+|Drawdown|最大亏损幅度|
+|Diversification|分散风险|
+|In Sample(IS)|训练数据|
+|Out Sample(OS)|测试数据|
+|Overfit|过拟合|
 
 
 
@@ -622,6 +791,18 @@ alpha_agent/
 5. 告诉我这个知识如何应用到alpha_agent项目
 
 内容如下：
+
+你现在是我的WorldQuant BRAIN量化导师。
+
+请把下面英文教程：
+1. 翻译成中文
+2. 用小学能理解的方式解释，尽可能简短的解释，不要太长了
+3. 解释所有量化术语
+4. 告诉我如何应用这个知识到设计表达式
+
+内容如下：
+
+
 
 
 ---
@@ -657,8 +838,18 @@ alpha_agent/
 |Truncation|限制单股票权重|
 |NaN|缺失数据|
 |Test Period|样本外测试|
-
-
+|Technical Analysis|技术分析|
+|Indicator|指标|
+|Factor|因子|
+|Alpha|预测模型|
+|CLV|收盘价在当天区间的位置|
+|High|最高价|
+|Low|最低价|
+|Close|收盘价|
+|Volume|成交量|
+|Momentum|动量|
+|Reversion|反转|
+|Sharpe Ratio|风险调整收益|
 
 
 

@@ -401,15 +401,23 @@ class Database:
         Returns:
             Feedback record ID
         """
-        # 1. Find the latest submission for this alpha if not provided
+        # 1. Find or auto-create submission for this alpha
         if submission_id is None:
             existing = self._execute(
-                "SELECT id FROM submissions WHERE alpha_id=? AND status='submitted' ORDER BY id DESC LIMIT 1",
+                "SELECT id FROM submissions WHERE alpha_id=? ORDER BY id DESC LIMIT 1",
                 (alpha_id,),
                 fetch=True,
             )
             if existing:
                 submission_id = existing[0][0]
+            else:
+                # No submission record exists — auto-create one since we're receiving BRAIN feedback
+                self._execute(
+                    "INSERT INTO submissions (alpha_id, status, brain_status, brain_sharpe, brain_fitness, brain_turnover, brain_returns, brain_drawdown, brain_margin, notes, submitted_at, accepted_at) VALUES (?, 'submitted', ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CASE WHEN ? IN ('accepted','rejected') THEN CURRENT_TIMESTAMP ELSE NULL END)",
+                    (alpha_id, status, sharpe, fitness, turnover, returns, drawdown, margin, notes, status),
+                )
+                submission_id = self._execute("SELECT last_insert_rowid()", fetch=True)[0][0]
+                logger.info(f"  Auto-created submission record (ID={submission_id}) for alpha_id={alpha_id}")
 
         # 2. Update submission record with BRAIN metrics
         if submission_id:
